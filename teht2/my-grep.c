@@ -47,11 +47,11 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-            fclose(fp);
+            fclose(fp); // tiedoston sulku
         }
     }
 
 
-    free(buffer);
+    free(buffer); // muistin vapautus!!!!!!
     return 0;
 }
