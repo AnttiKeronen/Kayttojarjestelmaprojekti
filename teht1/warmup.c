@@ -6,8 +6,9 @@
 
 int main(int argc, char *argv[]) {  // alustus kaikelle mitä koodissa tarvitaan
     FILE *syote, *tulos;  //pointterit tiedostoihin
-    char *rivit[10000];   // kiinteä taulukko riveille
+    char **rivit = NULL;  // dynaaminen taulukko riveille
     int maara = 0;   // kuinka monta riviä
+     int kapasiteetti = 0; //taulukon koko
     char *rivi = NULL;  // rivien lukua varten
     size_t pituus = 0;  // kuinka paljon muistia riveille
     ssize_t luettu;  // paljonko merkkejä luettu
@@ -44,23 +45,40 @@ int main(int argc, char *argv[]) {  // alustus kaikelle mitä koodissa tarvitaan
         tulos = stdout; // tuloste ruudulle jos ei täydet käskyt.
     }
 
-    // lukee rivit taulukkoon
+    // Lue rivit muistiin dynaamisesti
     while ((luettu = getline(&rivi, &pituus, syote)) != -1) {
-        rivit[maara] = strdup(rivi);
-        if (rivit[maara] == NULL) {
+        if (luettu > 0 && (rivi[luettu-1] == '\n' || rivi[luettu-1] == '\r')) {
+            rivi[luettu-1] = '\0';
+            luettu--;
+        }
+
+        if (maara >= kapasiteetti) { // kasvata taulukkoa tarvittaessa
+            kapasiteetti = kapasiteetti ? kapasiteetti * 2 : 16;
+            char **tmp = realloc(rivit, kapasiteetti * sizeof(char *));
+            if (!tmp) {
+                fprintf(stderr, "malloc failed\n");
+                exit(1);
+            }
+            rivit = tmp;
+        }
+        rivit[maara] = strdup(rivi); // kopioi rivi omaan muistilohkoon
+        if (!rivit[maara]) {
             fprintf(stderr, "malloc failed\n");
             exit(1);
         }
         maara++;
     }
+
     free(rivi);
     fclose(syote);
 
     // tulosta rivit käänteisessä järjestyksessä
     for (int i = maara - 1; i >= 0; i--) {
-        fprintf(tulos, "%s", rivit[i]);
+        fprintf(tulos, "%s\n", rivit[i]);
         free(rivit[i]);
     }
+
+    free(rivit);
 
     if (tulos != stdout) fclose(tulos);
 
